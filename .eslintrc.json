@@ -25,6 +25,7 @@
 	],
 	"rules": {
 		"import/prefer-default-export": "off",
+		"react/prop-types": "off",
 		"prettier/prettier": "error",
 		"class-methods-use-this": "off",
 		"@typescript-eslint/camelcase": "off",
