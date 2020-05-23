@@ -1,9 +1,11 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { FiArrowLeft, FiMail } from 'react-icons/fi';
 import { FormHandles } from '@unform/core';
 import { Form } from '@unform/web';
 import * as Yup from 'yup';
-import { Link, useHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
+import api from '../../services/api';
 
 import logoImg from '../../assets/logo.svg';
 
@@ -20,14 +22,16 @@ interface ForgotPasswordFormData {
 }
 
 const ForgotPassword: React.FC = () => {
-	const formRef = useRef<FormHandles>(null);
-	// const history = useHistory();
+	const [loading, setLoading] = useState(false);
 
+	const formRef = useRef<FormHandles>(null);
 	const { addToast } = useToast();
 
 	const handleSubmit = useCallback(
 		async (data: ForgotPasswordFormData) => {
 			try {
+				setLoading(true);
+
 				formRef.current?.setErrors({});
 
 				const schema = Yup.object().shape({
@@ -40,10 +44,14 @@ const ForgotPassword: React.FC = () => {
 					abortEarly: false,
 				});
 
-				// TODO
-				// Recover password
+				await api.post('/password/forgot', { email: data.email });
 
-				// history.push('/dashboard');
+				addToast({
+					type: 'success',
+					title: 'Password recovery email successfully submitted',
+					description:
+						'We sent you an email to confirm your password recovery. Check your email inbox',
+				});
 			} catch (err) {
 				if (err instanceof Yup.ValidationError) {
 					const errors = getValidationErrors(err);
@@ -57,6 +65,8 @@ const ForgotPassword: React.FC = () => {
 					description:
 						'An error ocurred when trying to recover password. Try again',
 				});
+			} finally {
+				setLoading(false);
 			}
 		},
 		[addToast],
@@ -75,7 +85,9 @@ const ForgotPassword: React.FC = () => {
 							placeholder="Your email address"
 						/>
 
-						<Button type="submit">Submit</Button>
+						<Button loading={loading} type="submit">
+							Submit
+						</Button>
 					</Form>
 					<Link to="/">
 						<FiArrowLeft />
