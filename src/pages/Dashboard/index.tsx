@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { isToday, format } from 'date-fns';
+import { isToday, format, parseISO } from 'date-fns';
 import DayPicker, { DayModifiers } from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 
@@ -29,6 +29,7 @@ interface MonthAvailabilityItem {
 interface Appointment {
 	id: string;
 	date: string;
+	hourFormatted: string;
 	user: {
 		name: string;
 		avatar_url: string;
@@ -70,17 +71,36 @@ const Dashboard: React.FC = () => {
 
 	useEffect(() => {
 		api
-			.get('/appointments/me', {
+			.get<Appointment[]>('/appointments/me', {
 				params: {
 					year: selectedDate.getFullYear(),
-					month: selectedDate.getMonth(),
+					month: selectedDate.getMonth() + 1,
 					day: selectedDate.getDate(),
 				},
 			})
 			.then(response => {
-				setAppointments(response.data);
+				const appointmentsFormatted = response.data.map(appointment => {
+					return {
+						...appointment,
+						hourFormatted: format(parseISO(appointment.date), 'HH:mm'),
+					};
+				});
+
+				setAppointments(appointmentsFormatted);
 			});
 	}, [selectedDate]);
+
+	const morningAppointments = useMemo(() => {
+		return appointments.filter(appointment => {
+			return parseISO(appointment.date).getHours() < 12;
+		});
+	}, [appointments]);
+
+	const afternoonAppointments = useMemo(() => {
+		return appointments.filter(appointment => {
+			return parseISO(appointment.date).getHours() >= 12;
+		});
+	}, [appointments]);
 
 	const disabledDays = useMemo(() => {
 		const dates = monthAvailability
@@ -151,69 +171,43 @@ const Dashboard: React.FC = () => {
 					<Section>
 						<strong>Morning</strong>
 
-						<Appointment>
-							<span>
-								<FiClock />
-								08:00
-							</span>
+						{morningAppointments.map(appointment => (
+							<Appointment key={appointment.id}>
+								<span>
+									<FiClock />
+									{appointment.hourFormatted}
+								</span>
 
-							<div>
-								<img
-									src="https://avatars3.githubusercontent.com/u/16601136?s=460&u=cc113eafff21220b4a2ef9c77d0456b6ff6175ce&v=4"
-									alt="Mike Morcerf"
-								/>
-								<strong>Mike Morcerf</strong>
-							</div>
-						</Appointment>
-
-						<Appointment>
-							<span>
-								<FiClock />
-								08:00
-							</span>
-
-							<div>
-								<img
-									src="https://avatars3.githubusercontent.com/u/16601136?s=460&u=cc113eafff21220b4a2ef9c77d0456b6ff6175ce&v=4"
-									alt="Mike Morcerf"
-								/>
-								<strong>Mike Morcerf</strong>
-							</div>
-						</Appointment>
+								<div>
+									<img
+										src={appointment.user.avatar_url}
+										alt={appointment.user.name}
+									/>
+									<strong>{appointment.user.name}</strong>
+								</div>
+							</Appointment>
+						))}
 					</Section>
 
 					<Section>
 						<strong>Afternoon</strong>
 
-						<Appointment>
-							<span>
-								<FiClock />
-								08:00
-							</span>
+						{afternoonAppointments.map(appointment => (
+							<Appointment key={appointment.id}>
+								<span>
+									<FiClock />
+									{appointment.hourFormatted}
+								</span>
 
-							<div>
-								<img
-									src="https://avatars3.githubusercontent.com/u/16601136?s=460&u=cc113eafff21220b4a2ef9c77d0456b6ff6175ce&v=4"
-									alt="Mike Morcerf"
-								/>
-								<strong>Mike Morcerf</strong>
-							</div>
-						</Appointment>
-
-						<Appointment>
-							<span>
-								<FiClock />
-								08:00
-							</span>
-
-							<div>
-								<img
-									src="https://avatars3.githubusercontent.com/u/16601136?s=460&u=cc113eafff21220b4a2ef9c77d0456b6ff6175ce&v=4"
-									alt="Mike Morcerf"
-								/>
-								<strong>Mike Morcerf</strong>
-							</div>
-						</Appointment>
+								<div>
+									<img
+										src={appointment.user.avatar_url}
+										alt={appointment.user.name}
+									/>
+									<strong>{appointment.user.name}</strong>
+								</div>
+							</Appointment>
+						))}
 					</Section>
 				</Schedule>
 				<Calendar>
